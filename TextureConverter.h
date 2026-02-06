@@ -1,21 +1,14 @@
 #pragma once
-#include <string>
 #include <DirectXTex.h>
+#include <string>
 
 class TextureConverter {
+public:
+	void Convert(const std::string& path);
 
+private:
+	static std::wstring ToWString(const std::string& s);
 
-
-	public:
-
-		void ConvertTextureWICToDDS(const std::string& filePath);
-
-		void LoadWICTextureFromFile(const std::string& filePath);
-
-		static std::wstring ConvertMultiByteStringToWideString(const std::string& mString);
-
-	private:
-	    DirectX::TexMetadata metadata_;
-	    DirectX::ScratchImage scratchImage_;
-
+	DirectX::ScratchImage image_;
+	DirectX::TexMetadata metadata_;
 };

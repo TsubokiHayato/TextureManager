@@ -1,22 +1,38 @@
 #include "TextureConverter.h"
-#include "assert.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <filesystem>
+#include <stdio.h>
 #include <windows.h>
 
-enum Argment { kApplicationPath, kFilePath, NumArgments };
+namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
-	assert(argc >= NumArgments);
-
-	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-	assert(SUCCEEDED(hr));
+	if (argc <= 1) {
+		printf("画像 or フォルダを exe にドラッグしてください\n");
+		system("pause");
+		return 0;
+	}
 
 	TextureConverter converter;
-	converter.ConvertTextureWICToDDS(argv[kFilePath]);
 
-	CoUninitialize();
+	for (int i = 1; i < argc; ++i) {
+		fs::path p = argv[i];
+
+		if (fs::is_directory(p)) {
+			for (auto& e : fs::directory_iterator(p)) {
+				if (e.is_regular_file()) {
+					auto ext = e.path().extension().string();
+					if (ext == ".png" || ext == ".jpg") {
+						converter.Convert(e.path().string());
+					}
+				}
+			}
+		} else {
+			converter.Convert(p.string());
+		}
+	}
+
 	system("pause");
 	return 0;
 }

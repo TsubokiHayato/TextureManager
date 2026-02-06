@@ -1,45 +1,38 @@
 #include "TextureConverter.h"
-#include <assert.h>
+#include <filesystem>
+#include <stdio.h>
 #include <windows.h>
 
 using namespace DirectX;
+namespace fs = std::filesystem;
 
-void TextureConverter::ConvertTextureWICToDDS(const std::string& filePath) {
+void TextureConverter::Convert(const std::string& path) {
+	std::wstring wpath = ToWString(path);
 
-	// jpg / png を読み込み
-	LoadWICTextureFromFile(filePath);
-
-	// 出力DDSパスを作成（拡張子だけ .dds に変更）
-	std::string ddsPath = filePath;
-	size_t pos = ddsPath.find_last_of('.');
-	if (pos != std::string::npos) {
-		ddsPath = ddsPath.substr(0, pos);
+	HRESULT hr = LoadFromWICFile(wpath.c_str(), WIC_FLAGS_NONE, &metadata_, image_);
+	if (FAILED(hr)) {
+		printf("Load failed: %s\n", path.c_str());
+		return;
 	}
-	ddsPath += ".dds";
 
-	std::wstring wideDDSPath = ConvertMultiByteStringToWideString(ddsPath);
+	fs::create_directory("DDS");
 
-	// DDSとして保存
-	HRESULT hr = SaveToDDSFile(scratchImage_.GetImages(), scratchImage_.GetImageCount(), metadata_, DDS_FLAGS_NONE, wideDDSPath.c_str());
+	fs::path out = fs::path("DDS") / fs::path(path).stem();
+	out += ".dds";
 
-	assert(SUCCEEDED(hr));
+	hr = SaveToDDSFile(image_.GetImages(), image_.GetImageCount(), metadata_, DDS_FLAGS_NONE, out.wstring().c_str());
+
+	if (FAILED(hr)) {
+		printf("Save failed\n");
+		return;
+	}
+
+	printf("OK : %s\n", out.string().c_str());
 }
 
-void TextureConverter::LoadWICTextureFromFile(const std::string& filePath) {
-
-	std::wstring wideFilePath = ConvertMultiByteStringToWideString(filePath);
-
-HRESULT hr = LoadFromWICFile(wideFilePath.c_str(), WIC_FLAGS_NONE, &metadata_, scratchImage_);
-	assert(SUCCEEDED(hr));
-}
-
-std::wstring TextureConverter::ConvertMultiByteStringToWideString(const std::string& mString) {
-
-	int size = MultiByteToWideChar(CP_ACP, 0, mString.c_str(), -1, nullptr, 0);
-
-	std::wstring wideString(size, L'\0');
-
-	MultiByteToWideChar(CP_ACP, 0, mString.c_str(), -1, &wideString[0], size);
-
-	return wideString;
+std::wstring TextureConverter::ToWString(const std::string& s) {
+	int size = MultiByteToWideChar(CP_ACP, 0, s.c_str(), -1, nullptr, 0);
+	std::wstring ws(size, L'\0');
+	MultiByteToWideChar(CP_ACP, 0, s.c_str(), -1, ws.data(), size);
+	return ws;
 }
