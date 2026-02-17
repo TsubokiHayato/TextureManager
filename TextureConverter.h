@@ -4,7 +4,7 @@
 
 class TextureConverter {
 public:
-	void Convert(const std::string& path);
+	void Convert(const std::string& path, size_t mipLevels = 1);
 
 private:
 	static std::wstring ToWString(const std::string& s);
